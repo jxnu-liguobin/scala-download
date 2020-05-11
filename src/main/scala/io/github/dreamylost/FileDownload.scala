@@ -126,7 +126,7 @@ object FileDownload extends LazyLogging {
           usingIgnore(connection.getInputStream) { is =>
             val buffer = new Array[Byte](getBufferSize())
             var len = -1
-            var newPos = startPos;
+            var newPos = startPos
             while (total < currentBlockSize && (len = is.read(buffer)) != -1) {
               total += len
               randomAccessFile.write(buffer, 0, len)
