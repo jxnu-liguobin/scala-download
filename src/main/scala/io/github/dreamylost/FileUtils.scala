@@ -45,7 +45,7 @@ object FileUtils {
    * @param charset 期望编码
    * @return 字符串
    */
-  def reader(file: File, charset: String): String = {
+  def reader(file: File)(implicit charset: String): String = {
     //buffer默认8192
     val array: Array[Byte] = usingIgnore(new BufferedInputStream(new FileInputStream(file))) {
       bf => Stream.continually(bf.read).takeWhile(-1 !=).map(_.toByte).toArray

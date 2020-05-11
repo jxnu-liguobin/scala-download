@@ -20,7 +20,7 @@ download {
     timeout = "10 s"
     file {
         #文件保存地址
-        save-address = "/Users/Downloads/scala-download"
+        save-path = "/Users/Downloads/scala-download"
         #默认带下载文件路径
         urls = ["https://downloads.lightbend.com/scala/2.13.2/scala-2.13.2.deb"]
         #记录下载状态的临时文件
