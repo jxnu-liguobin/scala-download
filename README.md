@@ -3,7 +3,7 @@ Scala 多线程断点下载
 
 ## 使用
 
-启动FileDownloadSpec.scala
+启动FileDownloadMain.scala
 
 超大文件线程数量较多，需要修改系统最大打开文件数量
 
