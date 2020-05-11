@@ -29,7 +29,7 @@ download {
 }
 ```
 
-目前写入是使用seek，因为写入还是单线程IO所以比较慢。如不需要将下载写入文件，可以考虑引入生产者消费者，通过记录序号，还原数据。
+目前写入是使用seek，因为写入还是单线程IO所以比较慢。如不需要将下载写入文件，可以考虑引入生产者消费者(后续用Akka)，通过记录序号，还原数据。
 
 ```
 /Library/Java/JavaVirtualMachines/jdk1.8.0_181.jdk/Contents/Home/bin/java "-javaagent:/Applications/IntelliJ IDEA.app/Contents/lib/idea_rt.jar=56802:/Applications/IntelliJ IDEA.app/Contents/bin" ......

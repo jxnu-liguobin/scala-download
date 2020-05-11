@@ -39,42 +39,12 @@ object FileDownload extends LazyLogging {
   private[this] val timeOut = Try(ConfigFactory.load().getString("download.timeout")).getOrElse("10 s")
   private[this] val tmpSufix = Try(ConfigFactory.load().getString("download.file.tmp-suffix")).getOrElse(".tmp")
 
-  var threadCount: Long = _
-  var blockSize: Long = _
+  private[this] var threadCount: Long = _
+  private[this] var blockSize: Long = _
   private[this] var countDownLatch: CountDownLatch = _
-
-  private[this] def getFileName(urlPath: String) = {
-    saveAddress + urlPath.substring(urlPath.lastIndexOf('/'))
-  }
-
-  private[this] def getUnWrapperTimeOut() = {
-    Duration.create(timeOut).toMillis.asInstanceOf[Int]
-  }
-
-  private[this] def getTempFileName(urlPath: String, threadId: Long) = {
-    saveAddress + "/" + threadId + tmpSufix
-  }
 
   def batchDownload(fileUrls: Seq[String]): Unit = {
     fileUrls.foreach(download)
-  }
-
-  private[this] def printSpeed(fileSize: Long, start: Long, end: Long, prefix: String = "", suffix: String = ""): Unit = {
-    val speed = fileSize.asInstanceOf[Double] / (end - start).asInstanceOf[Double]
-    val s = speed * 1000 / 1024
-    logger.info(s"$prefix: ${s.formatted("%.2f")} kb/s, total time: ${end - start}ms")
-    logger.info(suffix)
-
-  }
-
-  private[this] def getBufferSize() = {
-    val b = if (bufferSize > 256) 256 else if (bufferSize < 8) 8 else bufferSize
-    b * 1024 * 1024
-  }
-
-  private[this] def calculationThreadCount(fileSize: Long) = {
-    threadCount = fileSize / getBufferSize() + 1
-    countDownLatch = new CountDownLatch(threadCount.toInt)
   }
 
   def download(fileUrl: String): Unit = {
@@ -180,8 +150,37 @@ object FileDownload extends LazyLogging {
     }
   }
 
+  private[this] def getBufferSize() = {
+    val b = if (bufferSize > 256) 256 else if (bufferSize < 8) 8 else bufferSize
+    b * 1024 * 1024
+  }
+
+  private[this] def calculationThreadCount(fileSize: Long) = {
+    threadCount = fileSize / getBufferSize() + 1
+    countDownLatch = new CountDownLatch(threadCount.toInt)
+  }
+
+  private[this] def getFileName(urlPath: String) = {
+    saveAddress + urlPath.substring(urlPath.lastIndexOf('/'))
+  }
+
+  private[this] def getUnWrapperTimeOut() = {
+    Duration.create(timeOut).toMillis.asInstanceOf[Int]
+  }
+
+  private[this] def getTempFileName(urlPath: String, threadId: Long) = {
+    saveAddress + "/" + threadId + tmpSufix
+  }
+
   private[this] def closeConnect(connection: HttpURLConnection): Unit = {
     if (connection != null) connection.disconnect()
+  }
+
+  private[this] def printSpeed(fileSize: Long, start: Long, end: Long, prefix: String = "", suffix: String = ""): Unit = {
+    val speed = fileSize.asInstanceOf[Double] / (end - start).asInstanceOf[Double]
+    val s = speed * 1000 / 1024
+    logger.info(s"$prefix: ${s.formatted("%.2f")} kb/s, total time: ${end - start}ms")
+    logger.info(suffix)
 
   }
 }
