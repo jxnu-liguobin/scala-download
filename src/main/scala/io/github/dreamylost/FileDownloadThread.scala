@@ -1,6 +1,7 @@
 package io.github.dreamylost
 
 import java.io.{ RandomAccessFile, _ }
+import java.lang
 import java.net.{ HttpURLConnection, URL }
 
 import com.typesafe.scalalogging.LazyLogging
@@ -64,7 +65,7 @@ class FileDownloadThread(threadId: Long, var startPos: Long, endPos: Long, url: 
       usingIgnore(new RandomAccessFile(downloadFileName, "rwd")) { randomAccessFile =>
         // 设置开始下载的位置
         randomAccessFile.seek(startPos)
-        logger.info(s"thread: $threadId, startPos: $startPos, endPos: $endPos")
+        logger.info(s"thread: $threadId - startPos: $startPos, endPos: $endPos")
         usingIgnore(connection.getInputStream) { is =>
           val buffer = new Array[Byte](calculationAndGetBufferSize())
           var len = -1
@@ -72,14 +73,16 @@ class FileDownloadThread(threadId: Long, var startPos: Long, endPos: Long, url: 
           while (total < currentBlockSize && (len = is.read(buffer)) != -1) {
             total += len
             randomAccessFile.write(buffer, 0, len)
+            val processPercent = new lang.Double(total / currentBlockSize.asInstanceOf[Double] * 100).formatted("%.2f") + "%"
+            logger.info(s"thread $threadId - $processPercent complete now")
             // 更新存储的下载标记文件
             newPos += len
             val savePoint = String.valueOf(newPos)
             printStream.println(savePoint)
           }
-          logger.info(s"current thread $threadId, startPos: $startPos, endPos: $endPos, current total: $total")
+          logger.info(s"thread $threadId - startPos: $startPos, endPos: $endPos")
           connection.closeConnect()
-          printSpeed(currentBlockSize, startTime, System.currentTimeMillis(), prefix = s"thread $threadId speed: ", suffix = s"thread $threadId finished")
+          printSpeed(currentBlockSize, startTime, System.currentTimeMillis(), prefix = s"thread $threadId - speed: ", suffix = s"thread $threadId finished")
           countDownLatch.countDown()
         }
       }
