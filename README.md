@@ -24,7 +24,7 @@ download {
         # 线程数或actor数
         thread-count = 10
         # 文件保存地址
-        save-path = "/Users/Downloads/scala-download"
+        save-path = "/Users/youName/Downloads/scala-download"
         # 默认带下载文件路径
         urls = ["https://downloads.lightbend.com/scala/2.13.2/scala-2.13.2.deb"]
         # 记录下载状态的临时文件，下载成功时自动删除，下载中断时继续下载
