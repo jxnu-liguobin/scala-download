@@ -111,7 +111,11 @@ object FileDownload extends LazyLogging {
    * @param fileLength
    */
   def calculationThreadCount(fileLength: Long): Unit = {
-    threadCount = fileLength / calculationAndGetBufferSize() + 1
+    if (fileLength / 1024 / 1024 < 128) {
+      threadCount = 1
+    } else {
+      threadCount = fileLength / calculationAndGetBufferSize() + 1
+    }
     countDownLatch = new CountDownLatch(threadCount.toInt)
   }
 
