@@ -35,9 +35,9 @@ object FileDownloadAuditActor extends LazyLogging {
         case FileDownloadActor.DownloadDoingResult(actorId, processPercent, _) =>
           logger.info(s"actorId $actorId - $processPercent complete now")
         case FileDownloadActor.DownloadResult(actorId, blockSize, startTime, endTime, msg, _) =>
-          //简单重试
           printSpeed(blockSize, startTime, endTime, prefix = s"actorId $actorId - speed", suffix = msg.getOrElse(s"actorId $actorId finished"))
         case FileDownloadActor.DownloadErrorResult(actorId, taskBeginTime, fileTotalLength, startPos, endPos, url, error, replyTo) =>
+          //简单重试
           if (retryMap.containsKey(actorId)) {
             var count = retryMap.get(actorId)
             if (count < retryTimes) {
