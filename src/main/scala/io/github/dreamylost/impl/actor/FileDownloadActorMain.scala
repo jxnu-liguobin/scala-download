@@ -37,6 +37,7 @@ object FileDownloadActorMain extends LazyLogging with App {
     Behaviors.setup { context =>
       Behaviors.receiveMessage {
         case ShutdownSystem(msg) =>
+          logger.error(msg.getOrElse("None"))
           system.terminate()
           Behaviors.stopped
         case StartDownloadTask(actorId, start, totalSize, startPos, endPos, url) =>

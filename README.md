@@ -14,18 +14,20 @@ ulimit -n 2048
 修改application.conf
 ```
 download {
-    #缓冲区
+    # actor重试次数
+    retry-times = 10
+    # 缓冲区
     buffer-size = 64
-    #HTTP超时
+    # HTTP超时
     timeout = "10 s"
     file {
-        #线程数或actor数
+        # 线程数或actor数
         thread-count = 10
-        #文件保存地址
+        # 文件保存地址
         save-path = "/Users/Downloads/scala-download"
-        #默认带下载文件路径
+        # 默认带下载文件路径
         urls = ["https://downloads.lightbend.com/scala/2.13.2/scala-2.13.2.deb"]
-        #记录下载状态的临时文件，下载成功时自动删除，下载中断时继续下载
+        # 记录下载状态的临时文件，下载成功时自动删除，下载中断时继续下载
         tmp-suffix = ".tmp"
     }
 }
