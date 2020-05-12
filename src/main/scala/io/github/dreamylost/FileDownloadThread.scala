@@ -38,10 +38,10 @@ class FileDownloadThread(threadId: Long, var startPos: Long, endPos: Long, url: 
     connection.setRequestMethod("GET")
     connection.setReadTimeout(durationToMillis())
     val tempFileSavePos = getTempFileName(url, threadId)
-    logger.info(s"create temp file: $tempFileSavePos")
     val file = new File(tempFileSavePos)
     val printStream: PrintStream = new PrintStream(tempFileSavePos)
     if (file.exists() && file.length() > 0) {
+      logger.info(s"open temp file: $tempFileSavePos")
       val saveStartPos = reader(file)
       if (saveStartPos != null && saveStartPos.length() > 0) {
         startPos = Integer.parseInt(saveStartPos)

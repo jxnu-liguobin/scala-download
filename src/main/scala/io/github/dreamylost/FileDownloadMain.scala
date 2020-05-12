@@ -1,6 +1,6 @@
 package io.github.dreamylost
 
-import java.io.{ RandomAccessFile, _ }
+import java.io.RandomAccessFile
 import java.net.URL
 import java.util.concurrent.CountDownLatch
 
@@ -31,9 +31,9 @@ object FileDownload extends LazyLogging {
 
   import Constants._
 
-  private[this] var threadCount: Long = _
+  private[this] val threadCount: Long = Constants.threadCount
   private[this] var blockSize: Long = _
-  var countDownLatch: CountDownLatch = _
+  val countDownLatch: CountDownLatch = new CountDownLatch(threadCount.toInt)
 
   def batchDownload(fileUrls: Seq[String]): Unit = {
     fileUrls.foreach(download)
@@ -53,7 +53,6 @@ object FileDownload extends LazyLogging {
     // 获取下载文件大小
     if (connection.getResponseCode == 200) {
       val fileLength = connection.getContentLength
-      calculationThreadCount(fileLength)
       // 在本地创建一个与服务器大小一致的可随机写入文件
       usingIgnore(new RandomAccessFile(fileName, "rwd")) {
         randomAccessFile => randomAccessFile.setLength(fileLength)
@@ -73,26 +72,13 @@ object FileDownload extends LazyLogging {
         thread.start()
       }
       countDownLatch.await()
-      printSpeed(fileLength, startTime, System.currentTimeMillis(), prefix = s"total speed: ", suffix = "all download finished, download successfully")
+      printSpeed(fileLength, startTime, System.currentTimeMillis(), prefix = s"total speed", suffix = "all download finished, download successfully")
       //删除临时用于记录的文件
       clearTempFiles()
     } else {
       logger.error(s"network error or file not found: ${connection.getResponseCode}")
     }
     connection.closeConnect()
-  }
-
-  /**
-   * 删除用于记录位置的临时文件
-   */
-  def clearTempFiles(): Unit = {
-    val file = new File(savePath)
-    if (file.isDirectory) {
-      val cfs = file.listFiles()
-      for (f <- cfs) {
-        if (f.getName.endsWith(tmpSuffix)) f.delete()
-      }
-    }
   }
 
   /**
@@ -103,20 +89,6 @@ object FileDownload extends LazyLogging {
   def calculationAndGetBufferSize(): Int = {
     val b = if (bufferSize > 256) 256 else if (bufferSize < 8) 8 else bufferSize
     b * 1024 * 1024
-  }
-
-  /**
-   * 计算大概需要的线程数
-   *
-   * @param fileLength
-   */
-  def calculationThreadCount(fileLength: Long): Unit = {
-    if (fileLength / 1024 / 1024 < 128) {
-      threadCount = 1
-    } else {
-      threadCount = fileLength / calculationAndGetBufferSize() + 1
-    }
-    countDownLatch = new CountDownLatch(threadCount.toInt)
   }
 
   /**

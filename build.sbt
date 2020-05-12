@@ -14,5 +14,7 @@ libraryDependencies ++= Seq(
   "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.11.1",
   "com.typesafe.akka" %% "akka-actor-typed" % "2.6.4",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
-  "com.typesafe" % "config" % "1.4.0"
+  "com.typesafe" % "config" % "1.4.0",
+  "commons-codec" % "commons-codec" % "1.14"
+
 )
