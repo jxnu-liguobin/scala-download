@@ -1,6 +1,6 @@
 package io.github.dreamylost.impl.actor
 
-import akka.actor.typed.Behavior
+import akka.actor.typed.{ Behavior, SupervisorStrategy }
 import akka.actor.typed.scaladsl.Behaviors
 import com.typesafe.scalalogging.LazyLogging
 import io.github.dreamylost.Constants._
@@ -30,46 +30,49 @@ object FileDownloadAuditActor extends LazyLogging {
 
   //计算速度和处理结果actor
   def apply(): Behavior[Result] = {
-    Behaviors.receive { (context, message) =>
-      message match {
-        case FileDownloadActor.DownloadDoingResult(actorId, processPercent, _) =>
-          logger.info(s"actorId $actorId - $processPercent complete now")
-        case FileDownloadActor.DownloadResult(actorId, blockSize, startTime, endTime, msg, _) =>
-          printSpeed(blockSize, startTime, endTime, prefix = s"actorId $actorId - speed", suffix = msg.getOrElse(s"actorId $actorId finished"))
-        case FileDownloadActor.DownloadErrorResult(actorId, taskBeginTime, fileTotalLength, startPos, endPos, url, error, replyTo) =>
-          //简单重试
-          if (retryMap.containsKey(actorId)) {
-            var count = retryMap.get(actorId)
-            if (count < retryTimes) {
-              logger.warn(s"error, retry $count times")
-              replyTo ! DownloadTask(actorId, taskBeginTime, fileTotalLength, startPos, endPos, url, context.self)
-              count += 1
-              retryMap.put(actorId, count)
+    Behaviors.supervise[Result] {
+      Behaviors.receive { (context, message) =>
+        message match {
+          case FileDownloadActor.DownloadDoingResult(actorId, processPercent, _) =>
+            logger.info(s"actorId $actorId - $processPercent complete now")
+          case FileDownloadActor.DownloadResult(actorId, blockSize, startTime, endTime, msg, _) =>
+            printSpeed(blockSize, startTime, endTime, prefix = s"actorId $actorId - speed", suffix = msg.getOrElse(s"actorId $actorId finished"))
+          case FileDownloadActor.DownloadErrorResult(actorId, taskBeginTime, fileTotalLength, startPos, endPos, url, error, replyTo) =>
+            //简单重试
+            if (retryMap.containsKey(actorId)) {
+              var count = retryMap.get(actorId)
+              if (count < retryTimes) {
+                logger.warn(s"error, retry $count times")
+                replyTo ! DownloadTask(actorId, taskBeginTime, fileTotalLength, startPos, endPos, url, context.self)
+                count += 1
+                retryMap.put(actorId, count)
+              } else {
+                FileDownloadActorMain.system ! ShutdownSystem(Some(s"error, retry more than $retryTimes times: $error"))
+              }
             } else {
-              FileDownloadActorMain.system ! ShutdownSystem(Some(s"error, retry more than $retryTimes times: $error"))
+              retryMap.put(actorId, 1)
+              replyTo ! DownloadTask(actorId, taskBeginTime, fileTotalLength, startPos, endPos, url, context.self)
             }
-          } else {
-            retryMap.put(actorId, 1)
-            replyTo ! DownloadTask(actorId, taskBeginTime, fileTotalLength, startPos, endPos, url, context.self)
-          }
-        case FileDownloadActor.DownloadDoneResult(taskBeginTime, fileTotalLength, _) =>
-          val success =
-            """
-              |  .-')                                       ('-.    .-')     .-')
-              | ( OO ).                                   _(  OO)  ( OO ).  ( OO ).
-              |(_)---\_) ,--. ,--.     .-----.   .-----. (,------.(_)---\_)(_)---\_)
-              |/    _ |  |  | |  |    '  .--./  '  .--./  |  .---'/    _ | /    _ |
-              |\  :` `.  |  | | .-')  |  |('-.  |  |('-.  |  |    \  :` `. \  :` `.
-              | '..`''.) |  |_|( OO )/_) |OO  )/_) |OO  )(|  '--.  '..`''.) '..`''.)
-              |.-._)   \ |  | | `-' /||  |`-'| ||  |`-'|  |  .--' .-._)   \.-._)   \
-              |\       /('  '-'(_.-'(_'  '--'\(_'  '--'\  |  `---.\       /\       /
-              | `-----'   `-----'      `-----'   `-----'  `------' `-----'  `-----'
-              |""".stripMargin
-          printSpeed(fileTotalLength, taskBeginTime, System.currentTimeMillis(), prefix = s"total speed: ", suffix = s"all task finished, download successfully\n $success")
-          clearTempFiles()
-          FileDownloadActorMain.system ! ShutdownSystem(None)
+          case FileDownloadActor.DownloadDoneResult(taskBeginTime, fileTotalLength, _) =>
+            val success =
+              """
+                |  .-')                                       ('-.    .-')     .-')
+                | ( OO ).                                   _(  OO)  ( OO ).  ( OO ).
+                |(_)---\_) ,--. ,--.     .-----.   .-----. (,------.(_)---\_)(_)---\_)
+                |/    _ |  |  | |  |    '  .--./  '  .--./  |  .---'/    _ | /    _ |
+                |\  :` `.  |  | | .-')  |  |('-.  |  |('-.  |  |    \  :` `. \  :` `.
+                | '..`''.) |  |_|( OO )/_) |OO  )/_) |OO  )(|  '--.  '..`''.) '..`''.)
+                |.-._)   \ |  | | `-' /||  |`-'| ||  |`-'|  |  .--' .-._)   \.-._)   \
+                |\       /('  '-'(_.-'(_'  '--'\(_'  '--'\  |  `---.\       /\       /
+                | `-----'   `-----'      `-----'   `-----'  `------' `-----'  `-----'
+                |""".stripMargin
+            printSpeed(fileTotalLength, taskBeginTime, System.currentTimeMillis(), prefix = s"total speed: ", suffix = s"all task finished, download successfully\n $success")
+            clearTempFiles()
+            FileDownloadActorMain.system ! ShutdownSystem(None)
+        }
+        Behaviors.same
       }
-      Behaviors.same
-    }
+      //不影响主要功能，忽略错误
+    }.onFailure[RuntimeException](SupervisorStrategy.resume)
   }
 }

@@ -32,7 +32,7 @@ object FileDownloadActorMain extends LazyLogging with App {
 
   lazy val system: ActorSystem[FileTask] = ActorSystem(FileDownloadActorMain(), "file-download-system-actor")
 
-  //主actor
+  //主actor，不做恢复
   def apply(): Behavior[FileTask] =
     Behaviors.setup { context =>
       Behaviors.receiveMessage {
